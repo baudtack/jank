@@ -42,29 +42,33 @@ function mix(a, b) {
             var t = topa ^ topb;
             var b = bota ^ botb;
 
-            return (t * 0x100000000) + b;
+            return combine(t, b);
         } else {
             var topa = top(a);
             var bota = bot(a);
 
-            return (topa * 0x100000000) + (bota ^ b);
+            return combine(topa, (bota ^ b));
         }
     } else if (b > 0xffffffff) {
         var topb = top(b);
         var botb = bot(b);
 
-        return (topb * 0x100000000) + (botb ^ a);
+        return combine(topb, (botb ^ a));
     } else {
         return mint(a ^ b);
     }
 }
 
 function top(a) {
-    return a / 0x100000000;
+    return a / 0x80000000;
 }
 
 function bot(a) {
-    return a % 0x100000000;
+    return a % 0x80000000;
+}
+
+function combine(top, bot) {
+    return (top * 0x80000000) + bot;
 }
 
 function mint(a) {
@@ -86,4 +90,84 @@ function mint(a) {
     }
 }
 
-export { met, mix, mint };
+function con(a, b) {
+    //logical or
+    if(a instanceof JSBI || b instanceof JSBI) {
+        return mint(JSBI.bitwiseOr(JSBI.BigInt(a),
+                                   JSBI.BigInt(b)));
+    } else if (a > 0xffffffff) {
+        if (b > 0xffffffff) {
+            console.log('here is the thing');
+            var topa = top(a);
+            var bota = bot(a);
+            var topb = top(b);
+            var botb = bot(b);
+
+            var t = topa | topb;
+            var b = bota | botb;
+
+            console.log(t);
+            console.log(b);
+
+            return combine(t, b);
+        } else {
+            var topa = top(a);
+            var bota = bot(a);
+
+            return combine(topa, (bota | b));
+        }
+    } else if (b > 0xffffffff) {
+        var topb = top(b);
+        var botb = bot(b);
+
+        return conbine(topb, (botb | a));
+    } else {
+        return mint(a | b);
+    }
+}
+
+function dis(a, b) {
+    //logical and
+    if(a instanceof JSBI || b instanceof JSBI) {
+        return mint(JSBI.bitwiseOr(JSBI.BigInt(a),
+                                   JSBI.BigInt(b)));
+    } else if (a > 0xffffffff) {
+        if (b > 0xffffffff) {
+            var topa = top(a);
+            var bota = bot(a);
+            var topb = top(b);
+            var botb = bot(b);
+
+            var t = topa & topb;
+            var b = bota & botb;
+
+            return combine(t, b);
+        } else {
+            var topa = top(a);
+            var bota = bot(a);
+
+            return combine(topa, (bota & b));
+        }
+    } else if (b > 0xffffffff) {
+        var topb = top(b);
+        var botb = bot(b);
+
+        return conbine(topb, (botb & a));
+    } else {
+        return mint(a & b);
+    }
+}
+
+function lsh(b, n ,a) {
+    //logical left shift with bloq size
+}
+
+function rsh(b, n, a) {
+    //logical right shift with bloq size
+}
+
+function end(b, n, a) {
+    //last n bloqs (size b) of atom a
+}
+
+export { met, mix, mint, con, dis };

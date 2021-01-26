@@ -62,7 +62,7 @@ test('mint(-1) throws error', t => {
     });
 });
 
-test('mint(Number.MAX_SAFE_INTEGER + 1) throws error', t => {
+test('mint(Number.MAX_SAFE_INTEGER) throws error', t => {
     t.throws(function () {
         M.mint(Number.MAX_SAFE_INTERGER);
     });
@@ -85,3 +85,20 @@ test('mix(0b10010011001001, 0b10000101010001) is 0b00010110011000', t => {
 test('mix(0x400000000000, 0x200000000000) is 0x600000000000', t => {
     t.is(0x600000000000, M.mix(0x400000000000, 0x200000000000));
 });
+
+test('con(4, 2) is 6', t => {
+    t.is(6, M.con(4, 2));
+});
+
+test('con(0xffffffff0000, 0xffffffffeeee) is 0xffffffffeeee', t => {
+    t.is(0xffffffffeeee, M.con(0xffffffff0000, 0xffffffffeeee));
+});
+
+test('dis(4, 2) is 0', t => {
+    t.is(0, M.dis(4, 2));
+});
+
+test('dis(0xffffffff0000, 0xffffffffeeee) is 0xffffffff0000', t => {
+    t.is(0xffffffff0000, M.dis(0xffffffff0000, 0xffffffffeeee));
+});
+

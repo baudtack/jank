@@ -102,3 +102,55 @@ test('dis(0xffffffff0000, 0xffffffffeeee) is 0xffffffff0000', t => {
     t.is(0xffffffff0000, M.dis(0xffffffff0000, 0xffffffffeeee));
 });
 
+test('lsh(0, 1, 1) is 2', t => {
+    t.is(2, M.lsh(0, 1, 1));
+});
+
+test('lsh(0, 2, 1) is 4', t => {
+    t.is(4, M.lsh(0, 2, 1));
+});
+
+test('lsh(0, 3, 1) is 8', t => {
+    t.is(8, M.lsh(0, 3, 1));
+});
+
+test('lsh(3, 1, 2) is 0x200', t => {
+    t.is(0x200, M.lsh(3, 1, 2));
+});
+
+test('lsh(3, 2, 8) is 0x80000', t => {
+    t.is(0x80000, M.lsh(3, 2, 8));
+});
+
+test('lsh(3, 3, 10) is 0xa000000', t => {
+    t.is(0xa000000, M.lsh(3, 3, 10));
+});
+
+test('rsh(0, 1, 2) is 1', t => {
+    t.is(1, M.rsh(0, 1, 2));
+});
+
+test('rsh(0, 2, 4) is 1', t => {
+    t.is(1, M.rsh(0, 2, 4));
+});
+
+test('rsh(0, 3, 8) is 1', t => {
+    t.is(1, M.rsh(0, 3, 8));
+});
+
+test('rsh(3, 1, 0x200) is 2', t => {
+    t.is(2, M.rsh(3, 1, 0x200));
+});
+
+test('rsh(3, 2, 0x80000) is 8', t => {
+    t.is(8, M.rsh(3, 2, 0x80000));
+});
+
+test('rsh(3, 3, 0xa000000) is 10', t => {
+    t.is(10, M.rsh(3, 3, 0xa000000));
+});
+
+test('rsh(3, 3, 0xa111111) is 10', t => {
+    t.is(10, M.rsh(3, 3, 0xa111111));
+});
+

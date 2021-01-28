@@ -91,13 +91,15 @@ function mint(a) {
 }
 
 function con(a, b) {
+    a = mint(a);
+    b = mint(b);
+
     //logical or
     if(a instanceof JSBI || b instanceof JSBI) {
         return mint(JSBI.bitwiseOr(JSBI.BigInt(a),
                                    JSBI.BigInt(b)));
     } else if (a > 0xffffffff) {
         if (b > 0xffffffff) {
-            console.log('here is the thing');
             var topa = top(a);
             var bota = bot(a);
             var topb = top(b);
@@ -105,9 +107,6 @@ function con(a, b) {
 
             var t = topa | topb;
             var b = bota | botb;
-
-            console.log(t);
-            console.log(b);
 
             return combine(t, b);
         } else {
@@ -127,6 +126,9 @@ function con(a, b) {
 }
 
 function dis(a, b) {
+    a = mint(a);
+    b = mint(b);
+
     //logical and
     if(a instanceof JSBI || b instanceof JSBI) {
         return mint(JSBI.bitwiseOr(JSBI.BigInt(a),
@@ -160,14 +162,27 @@ function dis(a, b) {
 
 function lsh(b, n ,a) {
     //logical left shift with bloq size
+    var b = JSBI.BigInt(b),
+        n = JSBI.BigInt(n),
+        a = JSBI.BigInt(a);
+
+    var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
+    return mint(JSBI.leftShift(a, bits));
 }
 
 function rsh(b, n, a) {
     //logical right shift with bloq size
+    var b = JSBI.BigInt(b),
+        n = JSBI.BigInt(n),
+        a = JSBI.BigInt(a);
+
+    var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
+    return mint(JSBI.signedRightShift(a, bits));
+
 }
 
 function end(b, n, a) {
     //last n bloqs (size b) of atom a
 }
 
-export { met, mix, mint, con, dis };
+export { met, mix, mint, con, dis, lsh, rsh };

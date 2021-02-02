@@ -119,7 +119,7 @@ function con(a, b) {
         var topb = top(b);
         var botb = bot(b);
 
-        return conbine(topb, (botb | a));
+        return combine(topb, (botb | a));
     } else {
         return mint(a | b);
     }

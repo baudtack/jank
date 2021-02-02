@@ -183,6 +183,17 @@ function rsh(b, n, a) {
 
 function end(b, n, a) {
     //last n bloqs (size b) of atom a
+    var b = JSBI.BigInt(b),
+        n = JSBI.BigInt(n),
+        a = JSBI.BigInt(a);
+
+    var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
+    var mask = dec(lsh(0, bits, 1));
+    return mint(JSBI.bitwiseAnd(JSBI.BigInt(mask), a));
 }
 
-export { met, mix, mint, con, dis, lsh, rsh };
+function dec(a) {
+    return mint(JSBI.subtract(JSBI.BigInt(a), JSBI.BigInt(1)));
+}
+
+export { met, mix, mint, con, dis, lsh, rsh, end };

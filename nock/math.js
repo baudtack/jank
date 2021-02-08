@@ -196,4 +196,20 @@ function dec(a) {
     return mint(JSBI.subtract(JSBI.BigInt(a), JSBI.BigInt(1)));
 }
 
+function add(a, b) {
+    return mint(JSBI.add(JSBI.BigInt(a), JSBI.BigInt(b)));
+}
+
+function sub(a, b) {
+    return mint(JSBI.subtract(JSBI.BigInt(a), JSBI.BigInt(b)));
+}
+
+function mul(a, b) {
+    return mint(JSBI.multiply(JSBI.BigInt(a), JSBI.BigInt(b)));
+}
+
+function div(a, b) {
+    return mint(JSBI.divide(JSBI.BigInt(a), JSBI.BigInt(b)));
+}
+
 export { met, mix, mint, con, dis, lsh, rsh, end };

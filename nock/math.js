@@ -1,11 +1,49 @@
 import JSBI from 'jsbi'
 import * as E from './errors.js'
 
-function met(a, b){
+//Welp thanks to js being js,
+// get to rewrite all of this to use
+// TypedArrays instead of jsbi
+// math functions can use jsbi to be fast
+
+function abToJSBI(ab) {
+    var acc = JSBI.BigInt(0);
+    var dv = new DataView(ab);
+
+    for(var i = dv.byteLength - 1; i >= 0; i--) {
+        var chunk = dv.getUint8(i);
+        acc = JSBI.bitwiseXor(JSBI.leftShift(acc, JSBI.BigInt(8)),
+                              JSBI.BigInt(chunk));
+    }
+    return acc;
+}
+
+function jsbiToAB(beeg) {
+    var arr = [];
+    while(JSBI.notEqual(JSBI.BigInt(0), beeg)) {
+        var b = JSBI.toNumber(JSBI.bitwiseAnd(beeg, JSBI.BigInt(0xff)));
+        arr.push(b);
+        beeg = JSBI.signedRightShift(beeg, JSBI.BigInt(8));
+    }
+
+    var ab = new ArrayBuffer(arr.length);
+    var dv = new DataView(ab);
+    for(var i = 0; i < arr.length; i++) {
+        dv.setUint8(i, arr[i]);
+    }
+
+    return ab;
+}
+
+function bitLength(n) {
+    return Math.floor(Math.log2(n)) + 1;
+}
+
+function met(a, b) {
     // how many bloqs of size a are in b
-    if(b instanceof JSBI) {
-        //TODO: replace toString with a faster algo
-        var bits = b.toString(2).length,
+    if(b instanceof ArrayBuffer) {
+        var dv = new DataView(b);
+        var bits = (dv.byteLength - 1) * 8 + bitLength(dv.getUint8(dv.byteLength - 1)),
             full = bits >>> a,
             part = (full << a) !== bits;
         return part ? full + 1 : full;
@@ -29,9 +67,9 @@ function mix(a, b) {
     a = mint(a);
     b = mint(b);
 
-    if(a instanceof JSBI || b instanceof JSBI) {
-        return mint(JSBI.bitwiseXor(JSBI.BigInt(a),
-                                    JSBI.BigInt(b)));
+    if(a instanceof ArrayBuffer || b instanceof ArrayBuffer) {
+        return mint(JSBI.bitwiseXor(abToJSBI(a)),
+                                    abToJSBI(b));
     } else if (a > 0xffffffff) {
         if (b > 0xffffffff) {
             var topa = top(a);
@@ -72,10 +110,16 @@ function combine(top, bot) {
 }
 
 function mint(a) {
-    if(a instanceof JSBI) {
+    if(a instanceof ArrayBuffer) {
         //verify that it's big enough
-        if(JSBI.lessThan(a, JSBI.BigInt(Number.MAX_SAFE_INTEGER))) {
-            return JSBI.toNumber(a);
+        var aj = a;
+
+        if(a instanceof ArrayBuffer) {
+            aj = abToJSBI(a);
+        }
+
+        if(JSBI.lessThan(aj, JSBI.BigInt(Number.MAX_SAFE_INTEGER))) {
+            return JSBI.toNumber(aj);
         } else {
             return a;
         }
@@ -161,42 +205,85 @@ function dis(a, b) {
 }
 
 function lsh(b, n ,a) {
-    //logical left shift with bloq size
-    var b = JSBI.BigInt(b),
-        n = JSBI.BigInt(n),
-        a = JSBI.BigInt(a);
+    if(a instanceof ArrayBuffer || a > 0xffffffff) {
+        //logical left shift with bloq size
+        var b = JSBI.BigInt(b),
+            n = JSBI.BigInt(n);
+        if(a instanceof ArrayBuffer) {
+            a = abToJSBI(a);
+        } else {
+            a = JSBI.BigInt(a);
+        }
 
-    var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
-    return mint(JSBI.leftShift(a, bits));
+        var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
+        return mint(jsbiToDV(JSBI.leftShift(a, bits)));
+    } else {
+        var bits = Math.pow(2, b) * n;
+        return mint(a << bits);
+    }
 }
 
 function rsh(b, n, a) {
-    //logical right shift with bloq size
-    var b = JSBI.BigInt(b),
-        n = JSBI.BigInt(n),
-        a = JSBI.BigInt(a);
+    //logical right shift with bloq size,
+    if(a instanceof ArrayBuffer || a > 0xffffffff) {
+        var b = JSBI.BigInt(b),
+            n = JSBI.BigInt(n);
+        if(a instanceof ArrayBuffer) {
+            a = abToJSBI(a);
+        } else {
+            a = JSBI.BigInt(a);
+        }
 
-    var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
-    return mint(JSBI.signedRightShift(a, bits));
+        var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
+        return mint(jsbiToAB(JSBI.signedRightShift(a, bits)));
+    } else {
+        var bits = Math.pow(2, b) * n;
+        return mint(a >>> bits);
+    }
 
 }
 
 function end(b, n, a) {
     //last n bloqs (size b) of atom a
     var b = JSBI.BigInt(b),
-        n = JSBI.BigInt(n),
+        n = JSBI.BigInt(n);
+
+    if(a instanceof ArrayBuffer) {
+        a = abToJSBI(a);
+    } else {
         a = JSBI.BigInt(a);
+    }
 
     var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
     var mask = dec(lsh(0, bits, 1));
-    return mint(JSBI.bitwiseAnd(JSBI.BigInt(mask), a));
+    return mint(jsbiToAB(JSBI.bitwiseAnd(JSBI.BigInt(mask), a)));
 }
 
 function dec(a) {
-    return mint(JSBI.subtract(JSBI.BigInt(a), JSBI.BigInt(1)));
+    if(a instanceof ArrayBuffer) {
+        a = abToJSBI(a);
+        return mint(JSBI.subtract(a, JSBI.BigInt(1)));
+    } else {
+        return a - 1;
+    }
+
 }
 
 function add(a, b) {
+    if(a instanceof ArrayBuffer || b instanceof ArrayBuffer) {
+        if(a instanceof ArrayBuffer) {
+            a = abToJSBI(a);
+        }
+
+        if(b instanceof ArrayBuffer) {
+            b = abToJSBI(b);
+        }
+
+        return mint(jsbiToAB(JSBI.add(JSBI.BigInt(a), JSBI.BigInt(b))));
+    } else {
+        return a + b;
+    }
+
     return mint(JSBI.add(JSBI.BigInt(a), JSBI.BigInt(b)));
 }
 
@@ -212,4 +299,8 @@ function div(a, b) {
     return mint(JSBI.divide(JSBI.BigInt(a), JSBI.BigInt(b)));
 }
 
-export { met, mix, mint, con, dis, lsh, rsh, end };
+function cat(bloq, b, c) {
+    return add(lsh(bloq, met(bloq, c), c), b);
+}
+
+export { met, mix, mint, con, dis, lsh, rsh, end, cat, abToJSBI, jsbiToAB, add, sub, mul, div };

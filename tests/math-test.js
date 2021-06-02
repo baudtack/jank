@@ -32,19 +32,62 @@ test('met(0, 0xffff.ffff.ffff) is 48', t => {
 });
 
 test('met(0, 0x20.0000.0000.0000) is 54', t => {
-    t.is(54, M.met(0, JSBI.BigInt('0x20000000000000')));
+    var j = M.jsbiToAB(JSBI.BigInt('0x20000000000000'));
+
+    t.is(54, M.met(0, j));
 });
 
 test('met(0, 0xffff.ffff.ffff.ffff) is 64', t => {
-    t.is(64, M.met(0, JSBI.BigInt('0xffffffffffffffff')));
+    var j = M.jsbiToAB(JSBI.BigInt('0xffffffffffffffff'));
+
+    t.is(64, M.met(0, j));
 });
 
 test('met(0, 0xffff.ffff.ffff.ffff.ffff.ffff.ffff.ffff) is 128', t => {
-    t.is(128, M.met(0, JSBI.BigInt('0xffffffffffffffffffffffffffffffff')));
+    var j = M.jsbiToAB(JSBI.BigInt('0xffffffffffffffffffffffffffffffff'));
+    t.is(128, M.met(0, j));
 });
 
 test('met(3, 0x2.ffff.ffff.ffff.ffff.ffff.ffff.ffff.ffff) is 17', t => {
-    t.is(17, M.met(3, JSBI.BigInt('0x2ffffffffffffffffffffffffffffffff')));
+    var j = M.jsbiToAB(JSBI.BigInt('0x2ffffffffffffffffffffffffffffffff'));
+
+    t.is(17, M.met(3, j));
+});
+
+test('abToJSBI(DataView(10)) is jsbi(10)', t => {
+    var b = new ArrayBuffer(8);
+    var dv = new DataView(b);
+    dv.setUint8(0, 10);
+    var j = JSBI.BigInt(10);
+    var c = M.abToJSBI(b);
+    t.true(JSBI.equal(j, c));
+});
+
+test('jsbiToDV(jsbi(10)) is dataview(10)', t => {
+    var j = JSBI.BigInt(10);
+    var c = M.jsbiToAB(j);
+    var cdv = new DataView(c);
+    t.true(cdv.getUint8(0) === 10);
+});
+
+test('abToJSBI(DataView(1010)) is jsbi(1010)', t => {
+    var b = new ArrayBuffer(8);
+    var dv = new DataView(b);
+    dv.setUint8(0, 10);
+    dv.setUint8(1, 10);
+
+    var j = JSBI.BigInt(2570);
+    var c = M.abToJSBI(b);
+
+    t.true(JSBI.equal(j, c));
+});
+
+test('jsbiToAB(jsbi(2570)) is dataview(10, 10)', t => {
+    var j = JSBI.BigInt(2570);
+    var c = M.jsbiToAB(j);
+    var cdv = new DataView(c);
+
+    t.true(cdv.getUint8(0) === 10 && cdv.getUint8(1) === 10);
 });
 
 
@@ -52,8 +95,13 @@ test('mint(10) is 10', t => {
     t.is(10, M.mint(10));
 });
 
-test('mint(JSBI.BigInt(10)) is 10', t => {
-    t.is(10, M.mint(JSBI.BigInt(10)));
+test('mint(DataView(10)) is 10', t => {
+    var buff = new ArrayBuffer(8);
+    var dv = new DataView(buff);
+
+    dv.setUint8(0, 10)
+
+    t.is(10, M.mint(buff));
 });
 
 test('mint(-1) throws error', t => {
@@ -63,15 +111,32 @@ test('mint(-1) throws error', t => {
 });
 
 test('mint(Number.MAX_SAFE_INTEGER) throws error', t => {
+
     t.throws(function () {
         M.mint(Number.MAX_SAFE_INTERGER);
     });
 });
 
 test('mint(large bigint) is large bigint', t => {
-    var bi = JSBI.add(JSBI.BigInt(Number.MAX_SAFE_INTEGER),
-                      JSBI.BigInt(1));
-    t.is(bi, M.mint(bi));
+    var bi = M.jsbiToAB(JSBI.add(JSBI.BigInt(Number.MAX_SAFE_INTEGER),
+                                 JSBI.BigInt(1)));
+
+    var minted = M.mint(bi);
+
+    if(!(minted instanceof ArrayBuffer)) {
+        t.fail("result is not a ArrayBugger");
+    }
+
+    var minteddv = new DataView(minted);
+    var bidv = new DataView(bi);
+
+    for(var i = bidv.byteLength - 1; i >= 0; i--) {
+        if(bidv.getUint8(i) !== minteddv.getUint8(i)) {
+            t.fail("results do not match");
+        }
+    }
+
+    t.pass();
 });
 
 test('mix(0b100, 0b001) is 0b101', t => {
@@ -170,4 +235,15 @@ test('end(3, 2, 0b11101101101111000101001) is 0b1101111000101001', t => {
     t.is(0b1101111000101001, M.end(3, 2, 0b11101101101111000101001));
 });
 
+test('add(3, 4) is 7', t => {
+    t.is(7, M.add(3, 4));
+});
+
+test('add(3, ab(4)) is 7', t => {
+    var ab = new ArrayBuffer(1);
+    var dv = new DataView(ab);
+    dv.setUint8(0, 4);
+
+    t.is(7, M.add(3, ab));
+});
 

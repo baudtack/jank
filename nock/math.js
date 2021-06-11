@@ -35,7 +35,7 @@ function jsbiToAB(beeg) {
     return ab;
 }
 
-function bitLength(n) {
+function numberBitLength(n) {
     return Math.floor(Math.log2(n)) + 1;
 }
 
@@ -43,7 +43,7 @@ function met(a, b) {
     // how many bloqs of size a are in b
     if(b instanceof ArrayBuffer) {
         var dv = new DataView(b);
-        var bits = (dv.byteLength - 1) * 8 + bitLength(dv.getUint8(dv.byteLength - 1)),
+        var bits = (dv.byteLength - 1) * 8 + numberBitLength(dv.getUint8(dv.byteLength - 1)),
             full = bits >>> a,
             part = (full << a) !== bits;
         return part ? full + 1 : full;
@@ -206,21 +206,36 @@ function dis(a, b) {
 
 function lsh(b, n ,a) {
     if(a instanceof ArrayBuffer || a > 0xffffffff) {
-        //logical left shift with bloq size
-        var b = JSBI.BigInt(b),
-            n = JSBI.BigInt(n);
-        if(a instanceof ArrayBuffer) {
-            a = abToJSBI(a);
-        } else {
-            a = JSBI.BigInt(a);
-        }
-
-        var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
-        return mint(jsbiToDV(JSBI.leftShift(a, bits)));
+        return lshBI(b, n, a);
     } else {
         var bits = Math.pow(2, b) * n;
-        return mint(a << bits);
+
+        if(bits > 32) {
+            return lshBI(b, n, a);
+        }
+
+        var bs = met(0, a);
+
+        if(bs > 32 || bs + bits > 32) {
+            return lshBI(b, n, a);
+        }
+
+        return a << bits;
     }
+}
+
+function lshBI(b, n, a) {
+    //logical left shift with bloq size
+    var b = JSBI.BigInt(b),
+        n = JSBI.BigInt(n);
+    if(a instanceof ArrayBuffer) {
+        a = abToJSBI(a);
+    } else {
+        a = JSBI.BigInt(a);
+    }
+
+    var bits = JSBI.multiply(JSBI.exponentiate(JSBI.BigInt(2), b), n);
+    return mint(jsbiToAB(JSBI.leftShift(a, bits)));
 }
 
 function rsh(b, n, a) {
@@ -281,10 +296,14 @@ function add(a, b) {
 
         return mint(jsbiToAB(JSBI.add(JSBI.BigInt(a), JSBI.BigInt(b))));
     } else {
-        return a + b;
-    }
+        var r = a + b;
 
-    return mint(JSBI.add(JSBI.BigInt(a), JSBI.BigInt(b)));
+        if(r > Number.MAX_SAFE_INTEGER) {
+            return mint(JSBI.add(JSBI.BigInt(a), JSBI.BigInt(b)));
+        }
+
+        return r;
+    }
 }
 
 function sub(a, b) {
@@ -300,7 +319,7 @@ function div(a, b) {
 }
 
 function cat(bloq, b, c) {
-    return add(lsh(bloq, met(bloq, c), c), b);
+    return add(lsh(bloq, met(bloq, b), c), b);
 }
 
 export { met, mix, mint, con, dis, lsh, rsh, end, cat, abToJSBI, jsbiToAB, add, sub, mul, div };

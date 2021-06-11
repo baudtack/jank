@@ -1,6 +1,6 @@
-import test from 'ava';
-import * as M from '../nock/math.js';
-import '../nock/errors.js';
+import test from 'ava'
+import * as M from '../nock/math.js'
+import '../nock/errors.js'
 import JSBI from 'jsbi'
 
 test('met(0, 8) is 4', t => {
@@ -52,6 +52,24 @@ test('met(3, 0x2.ffff.ffff.ffff.ffff.ffff.ffff.ffff.ffff) is 17', t => {
     var j = M.jsbiToAB(JSBI.BigInt('0x2ffffffffffffffffffffffffffffffff'));
 
     t.is(17, M.met(3, j));
+});
+
+
+test('bit cats', t => {
+    t.is(0, M.cat(0, 0, 0), "zero");
+    t.is(1, M.cat(0, 0, 1), "one");
+    t.is(1, M.cat(0, 1, 0), "two");
+    t.is(3, M.cat(0, 1, 1), "three");
+});
+
+test('word cats', t => {
+    t.is(32, M.cat(5, 0, 32), "0 and 32");
+    t.is(32, M.cat(5, 32, 0), "32 and 0");
+    t.is(137438953504, M.cat(5, 32, 32), "32 and 32");
+
+    var ab = M.jsbiToAB(JSBI.BigInt("0xdeadbeefdeadbeef"));
+    t.deepEqual(ab, M.cat(5, 0xdeadbeef, 0xdeadbeef), "deadbeef and deadbeef");
+
 });
 
 test('abToJSBI(DataView(10)) is jsbi(10)', t => {
